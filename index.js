@@ -25,7 +25,7 @@ const UUID = require('node-uuid');
 module.exports.RedisQueueWatchdog = class RedisQueueWatchdog extends event.EventEmitter {
 
     /**
-     * Starting a watchdog instance
+     * Creating a watchdog instance
      *
      * @param watchdogRedis Instance of IORedis that will enter subscribe mode, can pass null and then create it internally
      * @param watchdogRedisHost Host for internal watchdog IORedis instance
@@ -109,6 +109,15 @@ module.exports.RedisQueueWatchdog = class RedisQueueWatchdog extends event.Event
 
 module.exports.RedisQueueProducer = class RedisQueueProducer extends event.EventEmitter {
 
+    /**
+     * Creating a watchdog instance
+     *
+     * @param redis Instance of IORedis that will manipulate the queue, can pass null and then create it internally.
+     * @param redisHost Host for internal IORedis instance
+     * @param redisPort Port for internal IORedis instance
+     * @param redisSpace Database index for internal IORedis instance
+     * @param queue The name of the queue in redis
+     */
     constructor({
         redis,
         redisHost, redisPort, redisSpace, queue,
@@ -121,13 +130,35 @@ module.exports.RedisQueueProducer = class RedisQueueProducer extends event.Event
         assert(this.redis instanceof Redis);
     }
 
-    send(element) {
-        return this.redis.lpush(this.queue, element);
+    /**
+     * Send message
+     * @param message The message
+     * @returns {Promise}
+     */
+    send(message) {
+        return this.redis.lpush(this.queue, message);
     }
 }
 
 module.exports.RedisQueueConsumer = class RedisQueueConsumer extends event.EventEmitter {
 
+    /**
+     * Creating a watchdog instance
+     *
+     * @param watchdogRedis Instance of IORedis that will enter subscribe mode, can pass null and then create it internally
+     * @param watchdogRedisHost Host for internal watchdog IORedis instance
+     * @param watchdogRedisPort Port for internal watchdog IORedis instance
+     * @param watchdogRedisSpace Database index for internal watchdog IORedis instance
+     * @param redis Instance of IORedis that will manipulate the queue, can pass null and then create it internally.
+     * @param redisHost Host for internal IORedis instance
+     * @param redisPort Port for internal IORedis instance
+     * @param redisSpace Database index for internal IORedis instance
+     * @param watchdogTimeout Timeout of the watchdog
+     * @param watchdogTopic Topic name which watchdog is subscribe to
+     * @param queue The name of the queue in redis
+     * @param setInterval setInterval function, pass a stub if you want to do test.
+     * @param clearInterval clearInterval function, pass a stub if you want to do test.
+     */
     constructor({
         watchdogRedis, redis,
         watchdogRedisHost, watchdogRedisPort, watchdogRedisSpace,
@@ -158,7 +189,7 @@ module.exports.RedisQueueConsumer = class RedisQueueConsumer extends event.Event
     /**
      * Start queue consumer
      * @param consumer function handle queue element and should return a Promise
-     * @returns {RedisQueueConsumer}
+     * @returns {Promise}
      */
     start(consumer) {
         this.started = true;
@@ -190,6 +221,9 @@ module.exports.RedisQueueConsumer = class RedisQueueConsumer extends event.Event
         });
     }
 
+    /**
+     * Stop queue consumer
+     */
     stop() {
         this.started = false;
         this.clearInterval(this.watchdogInterval);
