@@ -1,6 +1,9 @@
 # RRMQ 
 Redis Reliable Message Queue
 
+[![Build Status](https://travis-ci.org/thynson/rrmq.svg?branch=master)](https://travis-ci.org/thynson/rrmq)
+[![npm version](https://badge.fury.io/js/rrmq.svg)](https://badge.fury.io/js/rrmq)
+
 ## Introduction
   This library implements a message queue over redis based on feature of 
   `BRPOPLPUSH` and `PUBLISH`/`SUBSCRIBE`.
