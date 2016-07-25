@@ -48,6 +48,10 @@ module.exports = class RedisQueueWatchdog extends event.EventEmitter {
 
     }
 
+    /**
+     * Start the watchdog
+     * @returns {Promise}
+     */
     start() {
 
         this.watchdogRedis.on('message', (topic, data) => {
@@ -78,6 +82,10 @@ module.exports = class RedisQueueWatchdog extends event.EventEmitter {
         return this.watchdogRedis.subscribe(this.watchdogTopic);
     }
 
+    /**
+     * Stop the watchdog
+     * @returns {Promise}
+     */
     stop() {
         return this.watchdogRedis.unsubscribe(this.watchdogTopic);
     }
