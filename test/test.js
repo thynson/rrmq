@@ -1,5 +1,5 @@
 require('co-mocha');
-const RedisQueueWatchdog = require('..');
+const {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} = require('..');
 const Redis = require('ioredis');
 const co = require('co');
 const assert = require('assert');
@@ -60,6 +60,23 @@ describe('RedisQueueWatchdog', function() {
         yield new Promise (done => setTimeout(done, 500));
         assert.equal(cancelled, true);
         yield x.stop()
+
+    })
+});
+
+describe('Consumer and Producer', function () {
+
+    it('should receive message', function *() {
+        "use strict";
+        let consumer = new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE});
+        let received = false;
+        yield consumer.start (co.wrap(function*(message) {
+            received = true;
+        }));
+        let producer = new RedisQueueProducer({ queue: TEST_QUEUE});
+        yield producer.send('test');
+        yield new Promise (done => setTimeout(done, 500));
+        assert(received == true);
 
     })
 });

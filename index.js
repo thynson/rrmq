@@ -1,14 +1,28 @@
-/**
- * Created by lanxingcan on 16/7/25.
+/*
+ * Copyright (C) 2016 LAN Xingcan
+ * All right reserved
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
 const Redis = require('ioredis');
 const co = require('co');
 const assert = require('assert');
 const event = require('events');
+const UUID = require('node-uuid');
 
 
-module.exports = class RedisQueueWatchdog extends event.EventEmitter {
+module.exports.RedisQueueWatchdog = class RedisQueueWatchdog extends event.EventEmitter {
 
     /**
      * Starting a watchdog instance
@@ -37,8 +51,8 @@ module.exports = class RedisQueueWatchdog extends event.EventEmitter {
         if (watchdogTopic == null || watchdogTopic == '') throw new TypeError('watchdogTopic invalid');
         this.watchdogTopic = watchdogTopic;
         this.watchdogTimeout = watchdogTimeout || 30000;
-        this.setTimeout = this.setTimeout || setTimeout;
-        this.clearTimeout = this.clearTimeout || clearTimeout;
+        this.setTimeout = setTimeout || global.setTimeout;
+        this.clearTimeout = clearTimeout || global.clearTimeout;
 
         this.redis = redis || new Redis({host: redisHost , port: redisPort, db: redisSpace});
         assert(this.redis instanceof Redis);
@@ -91,4 +105,95 @@ module.exports = class RedisQueueWatchdog extends event.EventEmitter {
     }
 
 
+};
+
+module.exports.RedisQueueProducer = class RedisQueueProducer extends event.EventEmitter {
+
+    constructor({
+        redis,
+        redisHost, redisPort, redisSpace, queue,
+    }) {
+        super();
+        if (queue == null || queue == '') throw new TypeError('queue invalid');
+
+        this.queue = queue;
+        this.redis = redis || new Redis({host: redisHost , port: redisPort, db: redisSpace});
+        assert(this.redis instanceof Redis);
+    }
+
+    send(element) {
+        return this.redis.lpush(this.queue, element);
+    }
+}
+
+module.exports.RedisQueueConsumer = class RedisQueueConsumer extends event.EventEmitter {
+
+    constructor({
+        watchdogRedis, redis,
+        watchdogRedisHost, watchdogRedisPort, watchdogRedisSpace,
+        redisHost, redisPort, redisSpace, watchdogTimeout, watchdogTopic, queue,
+        setInterval, clearInterval
+    }) {
+        super();
+
+        if (watchdogTopic == null || watchdogTopic == '') throw new TypeError('watchdogTopic invalid');
+        if (queue == null || queue == '') throw new TypeError('queue invalid');
+
+        this.queue = queue;
+        this.sponge = `${this.queue}@${UUID.v1()}`;
+        this.watchdogTopic = watchdogTopic;
+        this.watchdogTimeout = watchdogTimeout || 30000;
+        this.setInterval = setInterval || global.setInterval;
+        this.clearInterval = clearInterval || global.clearInterval;
+
+        this.redis = redis || new Redis({host: redisHost , port: redisPort, db: redisSpace});
+        assert(this.redis instanceof Redis);
+        this.redisConnected = true;
+
+        this.watchdogRedis = watchdogRedis || new Redis({host: watchdogRedisHost, port: watchdogRedisPort, db: watchdogRedisSpace});
+        assert(this.watchdogRedis instanceof Redis);
+
+    }
+
+    /**
+     * Start queue consumer
+     * @param consumer function handle queue element and should return a Promise
+     * @returns {RedisQueueConsumer}
+     */
+    start(consumer) {
+        this.started = true;
+
+        let promise = (this.redisConnected)?new Promise(done=>done()) :this.redis.connect();
+        return promise.then (()=> {
+            console.log('started');
+
+            this.watchdogInterval = this.setInterval(()=> {
+                this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge: this.sponge}))
+                    .catch((e)=> this.emit(e));
+            }, this.watchdogTimeout / 2);
+
+            co(function*() {
+                try {
+                    while (true) {
+                        let element = yield this.redis.brpoplpush(this.queue, this.sponge, 0);
+                        yield consumer(element);
+                        yield this.redis.rpop(this.sponge);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    if (this.started) throw e;
+                }
+            }.bind(this)).catch((e)=>{
+                this.stop();
+                this.on('error', e);
+            });
+        });
+    }
+
+    stop() {
+        this.started = false;
+        this.clearInterval(this.watchdogInterval);
+        this.redis.disconnect();
+        this.redisConnected = false;
+    }
 };
