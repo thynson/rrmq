@@ -1,16 +1,22 @@
 {
-  "name": "y",
+  "name": "redis-queue-watchdog",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bluebird": "^3.4.1",
     "co": "^4.6.0",
     "ioredis": "^2.2.0"
+  },
+  "engine": {
+    "node": "^6.0.0"
+  },
+  "devDependencies": {
+    "co-mocha": "^1.1.2",
+    "mocha": "^2.5.3"
   }
 }
