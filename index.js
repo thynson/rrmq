@@ -186,38 +186,33 @@ module.exports.RedisQueueConsumer = class RedisQueueConsumer extends event.Event
 
     }
 
+    _hearbeat() {
+        return this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge: this.sponge}))
+            .catch((e)=> this.emit(e))
+    }
+
     /**
      * Start queue consumer
      * @param consumer function handle queue element and should return a Promise
      * @returns {Promise}
      */
     start(consumer) {
-        this.started = true;
-
-        let promise = (this.redisConnected)?new Promise(done=>done()) :this.redis.connect();
-        return promise.then (()=> {
-            console.log('started');
-
-            this.watchdogInterval = this.setInterval(()=> {
-                this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge: this.sponge}))
-                    .catch((e)=> this.emit(e));
-            }, this.watchdogTimeout / 2);
-
-            co(function*() {
-                try {
-                    while (true) {
-                        let element = yield this.redis.brpoplpush(this.queue, this.sponge, 0);
+        if (this.redis == null) throw new Error('This message queue has been stopped')
+        co(function*() {
+            try {
+                while (true) {
+                    yield this._hearbeat();
+                    let element = yield this.redis.brpoplpush(this.queue, this.sponge, parseInt(this.watchdogTimeout/1000) || 1);
+                    if (element != null) {
                         yield consumer(element);
-                        yield this.redis.rpop(this.sponge);
                     }
-                } catch (e) {
-                    console.error(e);
-                    if (this.started) throw e;
+                    yield this.redis.rpop(this.sponge);
                 }
-            }.bind(this)).catch((e)=>{
-                this.stop();
-                this.on('error', e);
-            });
+            } catch (e) {
+                if (this.redis != null) throw e;
+            }
+        }.bind(this)).catch((e)=>{
+            this.emit('error', e);
         });
     }
 
@@ -225,9 +220,10 @@ module.exports.RedisQueueConsumer = class RedisQueueConsumer extends event.Event
      * Stop queue consumer
      */
     stop() {
-        this.started = false;
-        this.clearInterval(this.watchdogInterval);
-        this.redis.disconnect();
-        this.redisConnected = false;
+        if (this.redis) {
+            this.clearInterval(this.watchdogInterval);
+            this.redis.disconnect();
+            this.redis = null;
+        }
     }
 };
