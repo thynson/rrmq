@@ -5,14 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha",
-    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
+    "jsdoc": "./node_modules/.bin/jsdoc index.js -d ./docs"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "co": "^4.6.0",
-    "ioredis": "^2.2.0",
-    "node-uuid": "^1.4.7"
+    "node-uuid": "^1.4.7",
+    "ioredis": "^2.2.0"
   },
   "engine": {
     "node": "^6.0.0"
