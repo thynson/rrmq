@@ -4,7 +4,8 @@
   "description": "Redis Reliable Message Queue",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha"
+    "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha",
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +19,8 @@
   },
   "devDependencies": {
     "co-mocha": "^1.1.2",
+    "coveralls": "^2.11.11",
+    "istanbul": "^0.4.4",
     "mocha": "^2.5.3"
   }
 }
