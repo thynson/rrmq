@@ -2,6 +2,7 @@
 Redis Reliable Message Queue
 
 [![Build Status](https://travis-ci.org/thynson/rrmq.svg?branch=master)](https://travis-ci.org/thynson/rrmq)
+[![Coverage Status](https://coveralls.io/repos/github/thynson/rrmq/badge.svg?branch=master)](https://coveralls.io/github/thynson/rrmq?branch=master)
 [![npm version](https://badge.fury.io/js/rrmq.svg)](https://badge.fury.io/js/rrmq)
 
 ## Introduction
