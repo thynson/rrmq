@@ -39,6 +39,7 @@ jspm_packages
 .node_repl_history
 
 
+.idea/vcs.xml
 .idea/.name
 .idea/jsLinters
 #.idea/
@@ -55,3 +56,6 @@ jspm_packages
 # and, if using gradle::
 .idea/gradle.xml
 .idea/libraries
+
+# Generated documentation
+docs/
