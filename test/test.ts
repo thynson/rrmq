@@ -115,7 +115,7 @@ describe('Consumer', function(this:Mocha) {
 });
 
 describe('Consumer and Producer', function (this:Mocha) {
-    this.slow(1000);
+    this.slow(5000).timeout(10000);
     it('should receive message', async () =>{
         "use strict";
         let consumer = new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE});
