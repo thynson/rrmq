@@ -2,10 +2,11 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es6",
+    "outDir": "built",
     "sourceMap": true,
     "declaration": true
   },
   "exclude": [
-    "node_modules", "docs", "coverage", "typings"
+    "node_modules", "docs", "coverage", "typings", "built"
   ]
 }

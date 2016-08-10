@@ -2,7 +2,7 @@
   "name": "rrmq",
   "version": "0.3.0-next",
   "description": "Redis Reliable Message Queue",
-  "main": "index.js",
+  "main": "built/index.js",
   "scripts": {
     "prepublish": "typings install && tsc",
     "test": "istanbul cover -e .ts  -x \"*.d.ts\" -x \"*.spec.ts\" node_modules/.bin/_mocha -- --compilers ts:ts-node/register test/*.ts",
