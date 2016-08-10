@@ -2,6 +2,8 @@ language: node_js
 node_js: 6
 services:
   - redis-server
-before_script: npm install && npm run build
+before_script:
+  - npm install
+  - npm run build
 script: npm test
 after_success: npm run coveralls

@@ -4,8 +4,7 @@
   "description": "Redis Reliable Message Queue",
   "main": "index.js",
   "scripts": {
-    "prepublish": "tsc",
-    "build": "typings install && tsc",
+    "prepublish": "typings install && tsc",
     "test": "istanbul cover -e .ts  -x \"*.d.ts\" -x \"*.spec.ts\" node_modules/.bin/_mocha -- --compilers ts:ts-node/register test/*.ts",
     "coveralls": "cat ./coverage/lcov.info | coveralls",
     "jsdoc": "./node_modules/.bin/jsdoc index.js -d ./docs"
