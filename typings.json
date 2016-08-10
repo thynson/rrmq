@@ -1,0 +1,12 @@
+{
+  "name": "rrmq",
+  "dependencies": {
+    "node-uuid": "registry:npm/node-uuid#1.4.7+20160723033700",
+    "source-map-support": "registry:npm/source-map-support#0.3.0+20160723033700"
+  },
+  "globalDependencies": {
+    "ioredis": "registry:dt/ioredis#0.0.0+20160724055938",
+    "mocha": "registry:dt/mocha#2.2.5+20160720003353",
+    "node": "registry:dt/node#6.0.0+20160807145350"
+  }
+}
