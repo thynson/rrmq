@@ -61,4 +61,5 @@ jspm_packages
 docs/
 *.js
 *.js.map
+*.d.ts
 typings
