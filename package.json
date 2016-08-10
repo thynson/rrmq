@@ -1,6 +1,6 @@
 {
   "name": "rrmq",
-  "version": "0.2.0",
+  "version": "0.3.0-next",
   "description": "Redis Reliable Message Queue",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "coveralls": "cat ./coverage/lcov.info | coveralls",
     "jsdoc": "./node_modules/.bin/jsdoc index.js -d ./docs"
   },
-  "author": "",
+  "author": "LAN Xingcan",
   "license": "ISC",
   "dependencies": {
     "node-uuid": "^1.4.7",
