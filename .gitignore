@@ -59,7 +59,7 @@ jspm_packages
 
 # Generated documentation
 docs/
-*.js
-*.js.map
-*.d.ts
-typings
+# Typings definitions
+typings/
+# Built files
+built/
