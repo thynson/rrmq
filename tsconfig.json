@@ -4,7 +4,8 @@
     "target": "es6",
     "outDir": "built",
     "sourceMap": true,
-    "declaration": true
+    "declaration": true,
+    "removeComments": true
   },
   "exclude": [
     "node_modules", "docs", "coverage", "typings", "built"

@@ -1,6 +1,6 @@
 {
   "name": "rrmq",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Redis Reliable Message Queue",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "coveralls": "^2.11.11",
-    "jsdoc": "^3.4.0",
     "mocha": "^2.5.3",
     "nyc": "^8.1.0",
     "ts-node": "^1.2.2",
