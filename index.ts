@@ -1,4 +1,3 @@
-/// <reference path="./typings/index.d.ts"/>
 /*
  * Copyright (C) 2016 LAN Xingcan
  * All right reserved
@@ -15,9 +14,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-
-
 
 import * as Redis from 'ioredis';
 import * as assert from 'assert';

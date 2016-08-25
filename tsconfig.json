@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
+    "target": "es2015",
     "outDir": "built",
     "sourceMap": true,
-    "declaration": true,
-    "removeComments": true
+    "declaration": true
   },
   "exclude": [
-    "node_modules", "docs", "coverage", "typings", "built"
+    "node_modules", "docs", "coverage", "built"
   ]
 }

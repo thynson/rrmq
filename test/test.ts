@@ -4,8 +4,6 @@ import {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} from '../ind
 import * as Redis from 'ioredis';
 import * as assert from 'assert';
 import * as UUID from 'node-uuid';
-import * as sourceMapSupport from 'source-map-support'
-sourceMapSupport.install();
 
 const TEST_QUEUE = 'test-queue';
 const TEST_SPONGE = 'test-sponge';
