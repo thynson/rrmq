@@ -3,6 +3,7 @@
   "version": "0.3.0-next",
   "description": "Redis Reliable Message Queue",
   "main": "built/index.js",
+  "typings": "built/index.d.ts",
   "scripts": {
     "prepublish": "typings install && tsc",
     "test": "mocha --compilers ts:ts-node/register test/test.ts",
@@ -17,7 +18,7 @@
     "ioredis": "^2.2.0"
   },
   "engine": {
-    "node": "^4.0.0"
+    "node": "^6.0.0"
   },
   "devDependencies": {
     "coveralls": "^2.11.11",
