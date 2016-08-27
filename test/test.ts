@@ -73,20 +73,10 @@ describe('Consumer', function(this:Mocha) {
 
     it('should be able to start and stop', async () =>{
         let consumer = new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE});
-        let received = false;
-        consumer.start(async() =>{
-            received = true;
-        });
+        consumer.start(async() => null);
         await new Promise (done => setTimeout(done, 100));
         consumer.stop();
         await new Promise (done => setTimeout(done, 100));
-        try {
-            await consumer.start(async ()=> null);
-        } catch (e) {
-            assert(e instanceof Error);
-            return;
-        }
-        assert(false, "unreachable");
     });
 
     it('should heartbeats', async () => {
