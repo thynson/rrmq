@@ -144,13 +144,6 @@ export namespace RedisQueueWatchdog {
         redis?: IORedis.Redis,
         watchdogRedis?: IORedis.Redis
     }
-
-    enum State {
-        STOPPED,
-        STOPPING,
-        STARTED,
-        STARTING
-    }
 }
 
 
@@ -196,6 +189,16 @@ export namespace RedisQueueProducer {
         queue: string
     }
 }
+
+enum RedisQueueConsumerStatus {
+
+
+    STOPPED,
+    STOPPING,
+    STARTED,
+    STARTING
+}
+
 export class RedisQueueConsumer extends event.EventEmitter {
 
     private watchdogTopic: string;
@@ -204,7 +207,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
     private watchdogRedis: IORedis.Redis;
     private queue: string;
     private sponge: string;
-    private stopped: boolean = true;
+    private state: RedisQueueConsumerStatus = RedisQueueConsumerStatus.STOPPED;
 
     /**
      * Creating a watchdog instance
@@ -248,7 +251,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
 
     }
 
-    _hearbeat() {
+    private _hearbeat() {
         return this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge: this.sponge}))
             .catch((e)=> this.emit(e))
     }
@@ -257,11 +260,11 @@ export class RedisQueueConsumer extends event.EventEmitter {
      * Start queue consumer
      * @param consumer {MessageHandler} function handle queue element
      */
-    start(consumer: MessageHandler) {
-        if (!this.stopped) return;
-        // if (this.redis == null) throw new Error('This message queue has been stopped');
-        this.stopped = false;
+    start(consumer: MessageHandler):Promise<void> {
+
         let looper = ()=> {
+            this.state = RedisQueueConsumerStatus.STARTED;
+            this.emit('started');
             this._hearbeat()
                 .then(()=> this.redis.brpoplpush(this.queue, this.sponge, parseInt('' + (this.watchdogTimeout / 1000)) || 1))
                 .then((element)=> {
@@ -277,22 +280,48 @@ export class RedisQueueConsumer extends event.EventEmitter {
                     return false;
                 })
                 .then((okay)=>{
-                    if (okay) return looper();
-                    this.stopped = true;
+                    if (!okay || this.state == RedisQueueConsumerStatus.STOPPING) {
+                        this.emit('stopped');
+                        this.state = RedisQueueConsumerStatus.STOPPED;
+                        return;
+                    } else
+                        return looper();
                 });
         };
-        looper();
+        return new Promise((done, fail) => {
+            switch(this.state) {
+                case RedisQueueConsumerStatus.STOPPED:
+                    setImmediate(looper);
+                    this.state = RedisQueueConsumerStatus.STARTING;
+                case RedisQueueConsumerStatus.STARTING:
+                    this.once('started', done);
+                    return;
+                case  RedisQueueConsumerStatus.STARTED:
+                    return done();
+                case RedisQueueConsumerStatus.STOPPING:
+                    return fail(new Error('Consumer is going to shutdown'));
+            }
+        });
     }
 
     /**
      * Stop queue consumer
      */
-    stop() {
-        if (this.stopped) return;
-        this.stopped = true;
+    stop(): Promise<void> {
+        return new Promise((done, fail) => {
+            switch(this.state) {
+                case RedisQueueConsumerStatus.STOPPED:
+                    return done();
+                case RedisQueueConsumerStatus.STARTING:
+                    return fail(new Error('Consumer is starting up'))
+                case RedisQueueConsumerStatus.STARTED:
+                    this.state = RedisQueueConsumerStatus.STOPPING;
+                case RedisQueueConsumerStatus.STOPPING:
+                    this.once('stopped', done);
+            }
+        });
     }
 }
-
 
 export namespace RedisQueueConsumer {
     export interface Config {
@@ -308,6 +337,7 @@ export namespace RedisQueueConsumer {
         redis?: IORedis.Redis;
         watchdogRedis?: IORedis.Redis;
     }
+
 
 }
 

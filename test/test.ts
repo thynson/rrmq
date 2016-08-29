@@ -8,6 +8,8 @@ import * as UUID from 'node-uuid';
 const TEST_QUEUE = 'test-queue';
 const TEST_SPONGE = 'test-sponge';
 const TEST_TOPIC = 'test-watch-dog';
+const consumerOpt = { watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE, watchdogTimeout: 1000};
+
 
 describe('RedisQueueWatchdog', function(this: Mocha) {
     "use strict";
@@ -69,65 +71,62 @@ describe('RedisQueueWatchdog', function(this: Mocha) {
     });
 });
 describe('Consumer', function(this:Mocha) {
-    this.slow(5000);
+    this.slow(3000);
 
-    it('should be able to start and stop', async () =>{
-        let consumer = new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE});
-        consumer.start(async() => null);
+    it('should be able to start and stop', async function(this:Mocha){
+        this.timeout(5000);
+        let consumer = new RedisQueueConsumer(consumerOpt);
+        await consumer.start(async() => null);
         await new Promise (done => setTimeout(done, 100));
-        consumer.stop();
-        await new Promise (done => setTimeout(done, 100));
+        await consumer.stop();
     });
 
-    it('should heartbeats', async () => {
+    it('should heartbeats', async function(this:Mocha) {
         var exception = null;
         this.timeout(5000);
-        let consumer = new RedisQueueConsumer({
-            watchdogTimeout: 100,
-            watchdogTopic: TEST_TOPIC,
-            queue: TEST_QUEUE,
-        });
+        let consumer = new RedisQueueConsumer(consumerOpt);
         consumer.on('error', (e)=> {console.error(e); exception = e});
-
         var redis = new Redis();
         await redis.subscribe(TEST_TOPIC);
-        consumer.start(async () => undefined);
+        await consumer.start(async () => undefined);
         let counter = 0;
         await new Promise((done)=>redis.on('message', (topic)=> topic == TEST_TOPIC && ++counter == 2 && done()));
-        consumer.stop();
+        await consumer.stop();
         await redis.unsubscribe(TEST_TOPIC);
         await redis.quit();
         assert(exception == null);
     });
 
+    it('should start', async function(this:Mocha) {
+    });
 });
 
 describe('Consumer and Producer', function (this:Mocha) {
     this.slow(5000).timeout(10000);
     it('should receive message', async () =>{
         "use strict";
-        let consumer = new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE});
+        let consumer = new RedisQueueConsumer(consumerOpt);
         let received = false;
-        consumer.start (async ()=> received = true);
+        await consumer.start (async ()=> received = true);
         let producer = new RedisQueueProducer({ queue: TEST_QUEUE});
         await producer.send('test');
         await new Promise (done => setTimeout(done, 100));
-        consumer.stop();
+        await consumer.stop();
         assert(received == true);
 
     });
 
     it('should emit error event when handler throw exception', async ()=> {
-        let consumer = new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE});
+        let consumer = new RedisQueueConsumer(consumerOpt);
         let exception = null;
         consumer.on('error', (e)=>{
             exception = e;
         } );
-        consumer.start (async message => { throw new Error(`Receive message: ${message}`);});
+        await consumer.start (async message => { throw new Error(`Receive message: ${message}`);});
         let producer = new RedisQueueProducer({ queue: TEST_QUEUE});
         await producer.send('test');
         await new Promise (done => setTimeout(done, 100));
-        consumer.stop();
+        await consumer.stop();
         assert(exception != null);
 
     });
@@ -136,7 +135,7 @@ describe('Consumer and Producer', function (this:Mocha) {
         "use strict";
         let values = [];
         for (let i = 0; i < 100; i++) values.push(i);
-        let consumers = values.map(x=>new RedisQueueConsumer({ watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE}));
+        let consumers = values.map(x=>new RedisQueueConsumer(consumerOpt));
         let receivedMessage = [];
         let sentMessage = [];
         const MAX_MESSAGE_COUNT = 5000;
@@ -144,7 +143,7 @@ describe('Consumer and Producer', function (this:Mocha) {
         await new Promise((done)=> {
 
             consumers.forEach(consumer=> {
-                consumer.start(async message =>{
+                return consumer.start(async message =>{
                     receivedMessage.push(message);
                     receivedCount++;
                     if (receivedCount == MAX_MESSAGE_COUNT) done();
@@ -158,7 +157,7 @@ describe('Consumer and Producer', function (this:Mocha) {
             }
         });
         assert.deepEqual(sentMessage.sort(), receivedMessage.sort());
-        consumers.forEach(consumer=>consumer.stop());
+        await Promise.all(consumers.map(c=>c.stop));
     });
 
 });
