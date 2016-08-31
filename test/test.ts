@@ -3,7 +3,7 @@
 import {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} from '../index';
 import * as Redis from 'ioredis';
 import * as assert from 'assert';
-import * as UUID from 'node-uuid';
+import * as tuid from 'tuid';
 
 const TEST_QUEUE = 'test-queue';
 const TEST_SPONGE = 'test-sponge';
@@ -204,7 +204,7 @@ describe('Consumer and Producer', function (this:Mocha) {
             });
             let producers = values.map(x=>new RedisQueueProducer({ queue: TEST_QUEUE}));
             for (let i = 0; i < MAX_MESSAGE_COUNT; i++) {
-                let message = UUID.v1();
+                let message = new tuid.Generator().generateSync().toString();
                 sentMessage.push(message);
                 producers[Date.now()%100].send(message);
             }
