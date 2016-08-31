@@ -13,7 +13,8 @@ const consumerOpt = { watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE, watchdogTime
 
 describe('RedisQueueWatchdog', function(this: Mocha) {
     "use strict";
-    this.slow(5000);
+    this.slow(3000).timeout(5000);
+
     it('should recover elements from sponge to queue', async () =>{
 
         let redis = new Redis();
@@ -68,6 +69,19 @@ describe('RedisQueueWatchdog', function(this: Mocha) {
         assert.equal(cancelled, true);
         await x.stop();
         await redis.quit();
+    });
+
+    it('should start/stop normally in any state', async ()=> {
+        let watchdog = new RedisQueueWatchdog(consumerOpt);
+        watchdog.start();
+        await watchdog.start();
+        await watchdog.start();
+        watchdog.start();
+        watchdog.stop();
+        watchdog.stop();
+        await watchdog.stop();
+        await watchdog.stop();
+        watchdog.stop();
     });
 });
 describe('Consumer', function(this:Mocha) {

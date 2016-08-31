@@ -20,6 +20,15 @@ import * as assert from 'assert';
 import * as UUID  from 'node-uuid';
 import * as event from 'events';
 
+
+
+enum State {
+    STOPPED,
+    STOPPING,
+    STARTED,
+    STARTING
+}
+
 /**
  * @callback MessageHandler
  * @param message {String}
@@ -38,7 +47,8 @@ export class RedisQueueWatchdog extends event.EventEmitter {
     private clearTimeout: typeof global.clearTimeout;
     private redis: IORedis.Redis;
     private watchdogRedis: IORedis.Redis;
-
+    private topicListener: (topic: string, data: string)=> void;
+    private state: State = State.STOPPED;
 
     /**
      * Creating a watchdog instance
@@ -70,16 +80,7 @@ export class RedisQueueWatchdog extends event.EventEmitter {
 
         this.watchdogRedis = opt.watchdogRedis || new Redis({host: opt.watchdogRedisHost, port: opt.watchdogRedisPort, db: opt.watchdogRedisSpace});
         assert(this.watchdogRedis instanceof Redis);
-
-    }
-
-    /**
-     * Start the watchdog
-     * @returns {Promise}
-     */
-    start():Promise<void> {
-
-        this.watchdogRedis.on('message', (topic, data) => {
+        this.topicListener = (topic, data) => {
             if (topic == this.watchdogTopic) {
 
                 try {
@@ -92,20 +93,12 @@ export class RedisQueueWatchdog extends event.EventEmitter {
                         this.clearTimeout(timeoutHandle);
                     }
                     timeoutHandle = this.setTimeout( ()=> {
-                        // Prevent leak!
-                        // delete this.table[sponge];
-                        // while(1 == (await this.redis.rpoplpush(sponge, queue))) {}
-
                         let fn = ()=> {
                             this.redis.rpoplpush(sponge, queue).then((result) => {
                                 if (result != 1) return fn();
                             })
                         };
                         fn();
-                        // this.redis.rpoplpush(sponge, queue).then()
-                        // new Promise((done, fail)=> {
-                        //
-                        // })
                     }, this.watchdogTimeout);
 
                     this.table[sponge]= timeoutHandle;
@@ -114,8 +107,39 @@ export class RedisQueueWatchdog extends event.EventEmitter {
                     this.emit('error', e);
                 }
             }
+        }
+    }
+
+    /**
+     * Start the watchdog
+     * @returns {Promise}
+     */
+    start():Promise<void> {
+        return new Promise((done, fail)=> {
+            switch(this.state) {
+                case State.STOPPED:
+                    this.state = State.STARTING;
+                    this.once('started', done);
+                    this.watchdogRedis.addListener('message', this.topicListener);
+                    this.watchdogRedis.subscribe(this.watchdogTopic)
+                        .then(()=> {
+                            this.state = State.STARTED;
+                            this.emit('started');
+                        })
+                        .catch(fail);
+                    return;
+                case State.STARTING:
+                    this.once('started', done);
+                    return;
+                case State.STARTED:
+                    done();
+                    return;
+                case State.STOPPING:
+                    fail(new Error('watchdog is stopping'));
+                    return;
+            }
         });
-        return this.watchdogRedis.subscribe(this.watchdogTopic).then(()=>void 0);
+
     }
 
     /**
@@ -123,7 +147,32 @@ export class RedisQueueWatchdog extends event.EventEmitter {
      * @returns {Promise}
      */
     stop() {
-        return this.watchdogRedis.unsubscribe(this.watchdogTopic);
+        return new Promise((done, fail)=> {
+            switch(this.state) {
+                case State.STOPPED:
+                    return done();
+                case State.STARTING:
+                    return fail(new Error('watchdog is starting'));
+                case State.STARTED:
+                    this.once('stopped', done);
+                    this.state = State.STOPPING;
+                    this.watchdogRedis.unsubscribe(this.watchdogTopic)
+                        .then(()=>{
+                            this.watchdogRedis.removeListener('message', this.topicListener);
+                            for (let sponge in this.table) {
+                                clearTimeout(this.table[sponge]);
+                                delete this.table[sponge];
+                            }
+                            this.state = State.STOPPED;
+                            this.emit('stopped');
+                        })
+                        .catch(fail);
+                    return;
+                case State.STOPPING:
+                    this.once('stopped', done);
+                    return;
+            }
+        })
     }
 
 
@@ -190,15 +239,6 @@ export namespace RedisQueueProducer {
     }
 }
 
-enum RedisQueueConsumerStatus {
-
-
-    STOPPED,
-    STOPPING,
-    STARTED,
-    STARTING
-}
-
 export class RedisQueueConsumer extends event.EventEmitter {
 
     private watchdogTopic: string;
@@ -207,7 +247,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
     private watchdogRedis: IORedis.Redis;
     private queue: string;
     private sponge: string;
-    private state: RedisQueueConsumerStatus = RedisQueueConsumerStatus.STOPPED;
+    private state: State = State.STOPPED;
 
     /**
      * Creating a watchdog instance
@@ -263,7 +303,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
     start(consumer: MessageHandler):Promise<void> {
 
         let looper = ()=> {
-            this.state = RedisQueueConsumerStatus.STARTED;
+            this.state = State.STARTED;
             this.emit('started');
             this._hearbeat()
                 .then(()=> this.redis.brpoplpush(this.queue, this.sponge, parseInt('' + (this.watchdogTimeout / 1000)) || 1))
@@ -280,8 +320,8 @@ export class RedisQueueConsumer extends event.EventEmitter {
                     return false;
                 })
                 .then((okay)=>{
-                    if (!okay || this.state == RedisQueueConsumerStatus.STOPPING) {
-                        this.state = RedisQueueConsumerStatus.STOPPED;
+                    if (!okay || this.state == State.STOPPING) {
+                        this.state = State.STOPPED;
                         this.emit('stopped');
                     } else {
                         looper();
@@ -290,15 +330,15 @@ export class RedisQueueConsumer extends event.EventEmitter {
         };
         return new Promise((done, fail) => {
             switch(this.state) {
-                case RedisQueueConsumerStatus.STOPPED:
-                    this.state = RedisQueueConsumerStatus.STARTING;
+                case State.STOPPED:
+                    this.state = State.STARTING;
                     process.nextTick(looper);
-                case RedisQueueConsumerStatus.STARTING:
+                case State.STARTING:
                     this.once('started', done);
                     return;
-                case  RedisQueueConsumerStatus.STARTED:
+                case  State.STARTED:
                     return done();
-                case RedisQueueConsumerStatus.STOPPING:
+                case State.STOPPING:
                     return fail(new Error('Consumer is going to shutdown'));
             }
         });
@@ -310,13 +350,13 @@ export class RedisQueueConsumer extends event.EventEmitter {
     stop(): Promise<void> {
         return new Promise((done, fail) => {
             switch(this.state) {
-                case RedisQueueConsumerStatus.STOPPED:
+                case State.STOPPED:
                     return done();
-                case RedisQueueConsumerStatus.STARTING:
+                case State.STARTING:
                     return fail(new Error('Consumer is starting up'))
-                case RedisQueueConsumerStatus.STARTED:
-                    this.state = RedisQueueConsumerStatus.STOPPING;
-                case RedisQueueConsumerStatus.STOPPING:
+                case State.STARTED:
+                    this.state = State.STOPPING;
+                case State.STOPPING:
                     this.once('stopped', done);
             }
         });
