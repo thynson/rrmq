@@ -14,7 +14,6 @@
   "author": "LAN Xingcan",
   "license": "ISC",
   "dependencies": {
-    "bluebird": "^3.4.5",
     "ioredis": "^2.2.0",
     "tuid": "^0.2.1"
   },
