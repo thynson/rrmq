@@ -97,7 +97,17 @@ describe('Consumer', function(this:Mocha) {
         assert(exception == null);
     });
 
-    it('should start', async function(this:Mocha) {
+    it('should start/stop normally in any state', async function(this:Mocha) {
+        let consumer = new RedisQueueConsumer(consumerOpt);
+        consumer.start(async () => undefined);
+        await consumer.start(async () => undefined);
+        await consumer.start(async () => undefined);
+        consumer.start(async () => undefined);
+        consumer.stop();
+        consumer.stop();
+        await consumer.stop();
+        await consumer.stop();
+        consumer.stop();
     });
 });
 
