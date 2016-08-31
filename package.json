@@ -1,6 +1,6 @@
 {
   "name": "rrmq",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Redis Reliable Message Queue",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
@@ -17,7 +17,7 @@
     "node-uuid": "^1.4.7",
     "ioredis": "^2.2.0"
   },
-  "keywords": ["Redis", "Message Queueu", "Typescript"],
+  "keywords": ["Redis", "Message Queue", "Typescript"],
   "engine": {
     "node": "^4.0.0"
   },
