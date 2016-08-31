@@ -14,10 +14,15 @@
   "author": "LAN Xingcan",
   "license": "ISC",
   "dependencies": {
-    "node-uuid": "^1.4.7",
-    "ioredis": "^2.2.0"
+    "bluebird": "^3.4.5",
+    "ioredis": "^2.2.0",
+    "tuid": "^0.2.1"
   },
-  "keywords": ["Redis", "Message Queue", "Typescript"],
+  "keywords": [
+    "Redis",
+    "Message Queue",
+    "Typescript"
+  ],
   "engine": {
     "node": "^4.0.0"
   },

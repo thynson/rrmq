@@ -17,8 +17,8 @@
 
 import * as Redis from 'ioredis';
 import * as assert from 'assert';
-import * as UUID  from 'node-uuid';
 import * as event from 'events';
+import * as tuid from 'tuid';
 
 
 
@@ -28,6 +28,13 @@ enum State {
     STARTED,
     STARTING
 }
+
+enum Result {
+    OKAY,
+    RESTART,
+    STOP
+}
+
 
 /**
  * @callback MessageHandler
@@ -95,11 +102,11 @@ export class RedisQueueWatchdog extends event.EventEmitter {
                     timeoutHandle = this.setTimeout( ()=> {
                         let fn = ()=> {
                             this.redis.rpoplpush(sponge, queue).then((result) => {
-                                if (result != 1) return fn();
+                                if (result != null) return fn();
                             })
                         };
                         fn();
-                    }, this.watchdogTimeout);
+                    }, this.watchdogTimeout * 2);
 
                     this.table[sponge]= timeoutHandle;
 
@@ -246,8 +253,9 @@ export class RedisQueueConsumer extends event.EventEmitter {
     private redis: IORedis.Redis | null;
     private watchdogRedis: IORedis.Redis;
     private queue: string;
-    private sponge: string;
     private state: State = State.STOPPED;
+    private idGenerator: tuid.Generator = new tuid.Generator()
+
 
     /**
      * Creating a watchdog instance
@@ -275,7 +283,6 @@ export class RedisQueueConsumer extends event.EventEmitter {
             throw new TypeError('queue invalid');
 
         this.queue = option.queue;
-        this.sponge = `${this.queue}@${UUID.v1()}`;
         this.watchdogTopic = option.watchdogTopic;
         this.watchdogTimeout = option.watchdogTimeout || 30000;
 
@@ -291,8 +298,8 @@ export class RedisQueueConsumer extends event.EventEmitter {
 
     }
 
-    private _hearbeat() {
-        return this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge: this.sponge}))
+    private _hearbeat(sponge) {
+        return this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge}))
             .catch((e)=> this.emit(e))
     }
 
@@ -302,29 +309,48 @@ export class RedisQueueConsumer extends event.EventEmitter {
      */
     start(consumer: MessageHandler):Promise<void> {
 
-        let looper = ()=> {
+        let looper = (identifier)=> {
+            let sponge = `${this.queue}@${identifier}`;
             this.state = State.STARTED;
             this.emit('started');
-            this._hearbeat()
-                .then(()=> this.redis.brpoplpush(this.queue, this.sponge, parseInt('' + (this.watchdogTimeout / 1000)) || 1))
+            this._hearbeat(sponge)
+                .then(()=> this.redis.brpoplpush(this.queue, sponge, Math.ceil(this.watchdogTimeout / 1000)|| 1))
                 .then((element)=> {
-                    if (element != null) return consumer(element);
+                    if (element == null) {
+                        //Timeout, continue
+                        return Promise.resolve(Result.OKAY);
+                    }
+
+                    return consumer(element)
+                        .then(()=>{
+                            return this.redis.lrem(sponge, 1, element)
+                                .then(()=> {
+                                    return Result.OKAY
+                                })
+                                .catch((e)=>{
+                                    this.emit('error', e);
+                                    return Result.STOP;
+                                });
+                        })
+                        .catch((e)=> {
+                            this.emit('error', e);
+                            return Result.RESTART;
+                        })
                 })
-                .then(()=> {
-                    return this.redis.rpop(this.sponge)
-                        .then(()=> true);
-                })
-                .catch((e)=> {
-                    if (this.redis != null)
-                        this.emit('error', e);
-                    return false;
-                })
-                .then((okay)=>{
-                    if (!okay || this.state == State.STOPPING) {
-                        this.state = State.STOPPED;
-                        this.emit('stopped');
-                    } else {
-                        looper();
+                .then((result)=>{
+                    if (this.state == State.STOPPING)
+                        result = Result.STOP;
+
+                    switch(result) {
+                        case Result.OKAY:
+                            return looper(identifier);
+                        case Result.RESTART:
+                            this.idGenerator.generate().then(id=>looper(id.toString()));
+                            return;
+                        case Result.STOP:
+                            this.state = State.STOPPED;
+                            this.emit('stopped');
+                            return;
                     }
                 });
         };
@@ -332,7 +358,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
             switch(this.state) {
                 case State.STOPPED:
                     this.state = State.STARTING;
-                    process.nextTick(looper);
+                    process.nextTick(() => this.idGenerator.generate().then((id)=> looper(id.toString())));
                 case State.STARTING:
                     this.once('started', done);
                     return;

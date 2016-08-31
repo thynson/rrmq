@@ -150,7 +150,38 @@ describe('Consumer and Producer', function (this:Mocha) {
         await new Promise (done => setTimeout(done, 100));
         await consumer.stop();
         assert(exception != null);
+    });
 
+    it('should continue receive message after error occurred', async ()=> {
+        let watchdog = new RedisQueueWatchdog(consumerOpt);
+        await watchdog.start();
+        let consumer = new RedisQueueConsumer(consumerOpt);
+        consumer.once('error', (e)=> {
+        })
+        let state = 0;
+        await Promise.all([ new Promise((done)=> {consumer.start (async message => {
+            switch(state) {
+                case 0:
+                    state++;
+                    assert(message == 'failed');
+                    throw new Error(`Receive message: ${message}`);
+                case 1:
+                    state++;
+                    assert(message == 'success');
+                    return ;
+                case 2:
+                    assert(message == 'failed');
+                    done();
+                    return ;
+            }
+        }); }), (async ()=> {
+            let producer = new RedisQueueProducer({queue: TEST_QUEUE});
+            await producer.send('failed');
+            await producer.send('success');
+        })()]);
+
+        await consumer.stop();
+        await watchdog.stop();
     });
 
     it('should not receive message exactly as passed', async ()=> {
