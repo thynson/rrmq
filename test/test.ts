@@ -71,10 +71,9 @@ describe('RedisQueueWatchdog', function(this: Mocha) {
     });
 });
 describe('Consumer', function(this:Mocha) {
-    this.slow(3000);
+    this.slow(3000).timeout(5000);
 
     it('should be able to start and stop', async function(this:Mocha){
-        this.timeout(5000);
         let consumer = new RedisQueueConsumer(consumerOpt);
         await consumer.start(async() => null);
         await new Promise (done => setTimeout(done, 100));
@@ -83,7 +82,6 @@ describe('Consumer', function(this:Mocha) {
 
     it('should heartbeats', async function(this:Mocha) {
         var exception = null;
-        this.timeout(5000);
         let consumer = new RedisQueueConsumer(consumerOpt);
         consumer.on('error', (e)=> {console.error(e); exception = e});
         var redis = new Redis();
