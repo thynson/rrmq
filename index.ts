@@ -281,18 +281,18 @@ export class RedisQueueConsumer extends event.EventEmitter {
                 })
                 .then((okay)=>{
                     if (!okay || this.state == RedisQueueConsumerStatus.STOPPING) {
-                        this.emit('stopped');
                         this.state = RedisQueueConsumerStatus.STOPPED;
-                        return;
-                    } else
-                        return looper();
+                        this.emit('stopped');
+                    } else {
+                        looper();
+                    }
                 });
         };
         return new Promise((done, fail) => {
             switch(this.state) {
                 case RedisQueueConsumerStatus.STOPPED:
-                    setImmediate(looper);
                     this.state = RedisQueueConsumerStatus.STARTING;
+                    process.nextTick(looper);
                 case RedisQueueConsumerStatus.STARTING:
                     this.once('started', done);
                     return;
