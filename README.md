@@ -7,13 +7,19 @@ Redis Reliable Message Queue
 
 ## Introduction
   This library implements a message queue over redis based on feature of 
-  `BRPOPLPUSH` and `PUBLISH`/`SUBSCRIBE`.
+  `BRPOPLPUSH` and `PUBLISH`/`SUBSCRIBE`, and is written in [Typescript].
   
   There are three role in this system:
   
   * Producer
   
     An instance of producer may push message to queue
+    
+  * Watchdog
+ 
+    A watchdog subscribe a specified channel to watch the status of 
+    consumers. If one consumer is down, the message was being processed
+    by that consumer will be recovered.
     
   * Consumer
   
@@ -26,10 +32,6 @@ Redis Reliable Message Queue
     notice that an instance has timed out and the message will be push
     back to the queue.
   
-  * Watchdog
- 
-    A watchdog subscribe a specified channel to watch the status of 
-    consumers.
     
 ## Example
 
@@ -72,3 +74,10 @@ new RedisQueueConsumer({
 }).on('error', console.error)
 .send('hello world message');
 ```
+
+# Use with typescript
+
+The typing file of this library can is placed on `node_modules/rrmq/built/index.d.ts`. 
+
+
+[Typescript]: https://www.typescriptlang.org/
