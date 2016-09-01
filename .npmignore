@@ -5,3 +5,4 @@ typings/
 *.yml
 *.ts
 !*.d.ts
+.nyc_output/
