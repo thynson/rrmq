@@ -1,6 +1,6 @@
 {
   "name": "rrmq",
-  "version": "1.0.0-alpha1",
+  "version": "1.0.0-alpha2",
   "description": "Redis Reliable Message Queue",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
