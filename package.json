@@ -1,6 +1,6 @@
 {
   "name": "rrmq",
-  "version": "1.0.0-alpha2",
+  "version": "1.0.0",
   "description": "Redis Reliable Message Queue",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
@@ -14,8 +14,8 @@
   "author": "LAN Xingcan",
   "license": "ISC",
   "dependencies": {
-    "ioredis": "^2.2.0",
-    "tuid": "^0.2.1"
+    "ioredis": "^2.3.0",
+    "tuid": "^0.2.6"
   },
   "keywords": [
     "Redis",
