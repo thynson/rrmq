@@ -1,9 +1,5 @@
 {
   "name": "rrmq",
-  "dependencies": {
-    "bluebird": "registry:npm/bluebird#3.4.1+20160811213708",
-    "source-map-support": "registry:npm/source-map-support#0.3.0+20160723033700"
-  },
   "globalDependencies": {
     "ioredis": "registry:dt/ioredis#0.0.0+20160724055938",
     "mocha": "registry:dt/mocha#2.2.5+20160720003353",
