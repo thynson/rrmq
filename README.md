@@ -5,6 +5,18 @@ Redis Reliable Message Queue
 [![Coverage Status](https://coveralls.io/repos/github/thynson/rrmq/badge.svg?branch=master)](https://coveralls.io/github/thynson/rrmq?branch=master)
 [![npm version](https://badge.fury.io/js/rrmq.svg)](https://badge.fury.io/js/rrmq)
 
+## Install
+This library currently requires `node@>4.0.0` and `npm@>3.0.0`. If you're using `node@4.*`,
+you probably have `npm@2.*` installed, then you need to run the following command first.
+
+`npm install -g npm@3`
+
+If you've setup you environment properly, run
+
+`npm install rrmq bluebird tuid`
+
+where `bluebird` and `tuid` are [peer dependencies] of this library
+
 ## Introduction
   This library implements a message queue over redis based on feature of 
   `BRPOPLPUSH` and `PUBLISH`/`SUBSCRIBE`, and is written in [Typescript].
@@ -81,3 +93,4 @@ The typing file of this library can is placed on `node_modules/rrmq/built/index.
 
 
 [Typescript]: https://www.typescriptlang.org/
+[peer dependencies]: https://nodejs.org/uk/blog/npm/peer-dependencies
