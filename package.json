@@ -15,7 +15,7 @@
   "license": "ISC",
   "peerDependencies": {
     "ioredis": "^2.3.0",
-    "tuid": "^0.2.6"
+    "tuid": "^0.4.1"
   },
   "keywords": [
     "Redis",
@@ -26,15 +26,17 @@
     "node": "^4.0.0"
   },
   "devDependencies": {
-    "ioredis": "^2.3.0",
-    "tuid": "^0.2.6",
     "@types/ioredis": "0.0.20",
     "@types/mocha": "^2.2.32",
     "@types/node": "^6.0.45",
+    "@types/bluebird": "^3.0.35",
+    "bluebird": "^3.4.6",
     "coveralls": "^2.11.11",
+    "ioredis": "^2.3.0",
     "mocha": "^2.5.3",
     "nyc": "^8.1.0",
     "ts-node": "^1.2.2",
+    "tuid": "^0.2.6",
     "typescript": "^2.0.0"
   }
 }
