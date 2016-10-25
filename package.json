@@ -23,7 +23,8 @@
     "Typescript"
   ],
   "engine": {
-    "node": "^4.0.0"
+    "node": "^4.0.0",
+    "npm": "^3.0.0"
   },
   "devDependencies": {
     "@types/ioredis": "0.0.20",
