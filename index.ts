@@ -254,7 +254,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
     private watchdogRedis: IORedis.Redis;
     private queue: string;
     private state: State = State.STOPPED;
-    private idGenerator: tuid.Generator = new tuid.Generator()
+    private idGenerator: tuid.Generator = new tuid.Generator();
 
 
     /**
@@ -298,7 +298,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
 
     }
 
-    private _hearbeat(sponge) {
+    private _heartbeat(sponge) {
         return this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge}))
             .catch((e)=> this.emit(e))
     }
@@ -309,19 +309,21 @@ export class RedisQueueConsumer extends event.EventEmitter {
      */
     start(consumer: MessageHandler):Promise<void> {
 
-        let looper = (identifier)=> {
+        let listenTimeout = Math.ceil(this.watchdogTimeout / 1000 / 2)|| 1;
+        let procedure = (identifier)=> {
             let sponge = `${this.queue}@${identifier}`;
             this.state = State.STARTED;
             this.emit('started');
-            this._hearbeat(sponge)
-                .then(()=> this.redis.brpoplpush(this.queue, sponge, Math.ceil(this.watchdogTimeout / 1000)|| 1))
+            this._heartbeat(sponge)
+                .then(()=> this.redis.brpoplpush(this.queue, sponge, listenTimeout))
                 .then((element)=> {
                     if (element == null) {
                         //Timeout, continue
                         return Promise.resolve(Result.OKAY);
                     }
 
-                    return consumer(element)
+                    return this._heartbeat(sponge)
+                        .then(()=> consumer(element)
                         .then(()=>{
                             return this.redis.lrem(sponge, 1, element)
                                 .then(()=> {
@@ -335,7 +337,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
                         .catch((e)=> {
                             this.emit('error', e);
                             return Result.RESTART;
-                        })
+                        }));
                 })
                 .then((result)=>{
                     if (this.state == State.STOPPING)
@@ -343,9 +345,9 @@ export class RedisQueueConsumer extends event.EventEmitter {
 
                     switch(result) {
                         case Result.OKAY:
-                            return looper(identifier);
+                            return procedure(identifier);
                         case Result.RESTART:
-                            this.idGenerator.generate().then(id=>looper(id.toString()));
+                            this.idGenerator.generate().then(id=>procedure(id.toString()));
                             return;
                         case Result.STOP:
                             this.state = State.STOPPED;
@@ -358,7 +360,8 @@ export class RedisQueueConsumer extends event.EventEmitter {
             switch(this.state) {
                 case State.STOPPED:
                     this.state = State.STARTING;
-                    process.nextTick(() => this.idGenerator.generate().then((id)=> looper(id.toString())));
+                    process.nextTick(() => this.idGenerator.generate().then((id)=> procedure(id.toString())));
+                //noinspection FallthroughInSwitchStatementJS
                 case State.STARTING:
                     this.once('started', done);
                     return;
@@ -379,9 +382,10 @@ export class RedisQueueConsumer extends event.EventEmitter {
                 case State.STOPPED:
                     return done();
                 case State.STARTING:
-                    return fail(new Error('Consumer is starting up'))
+                    return fail(new Error('Consumer is starting up'));
                 case State.STARTED:
                     this.state = State.STOPPING;
+                //noinspection FallthroughInSwitchStatementJS
                 case State.STOPPING:
                     this.once('stopped', done);
             }
