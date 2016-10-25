@@ -52,8 +52,8 @@ export class RedisQueueWatchdog extends event.EventEmitter {
     private watchdogTimeout: number;
     private setTimeout: typeof global.setTimeout;
     private clearTimeout: typeof global.clearTimeout;
-    private redis: IORedis.Redis;
-    private watchdogRedis: IORedis.Redis;
+    private redis: Redis.Redis;
+    private watchdogRedis: Redis.Redis;
     private topicListener: (topic: string, data: string)=> void;
     private state: State = State.STOPPED;
 
@@ -197,15 +197,15 @@ export namespace RedisQueueWatchdog {
         watchdogRedisHost?: string,
         watchdogRedisPort?: number,
         watchdogRedisSpace?: number,
-        redis?: IORedis.Redis,
-        watchdogRedis?: IORedis.Redis
+        redis?: Redis.Redis,
+        watchdogRedis?: Redis.Redis
     }
 }
 
 
 export class RedisQueueProducer extends event.EventEmitter {
 
-    private redis: IORedis.Redis;
+    private redis: Redis.Redis;
     private queue: string;
     /**
      * Creating a watchdog instance
@@ -238,7 +238,7 @@ export class RedisQueueProducer extends event.EventEmitter {
 
 export namespace RedisQueueProducer {
     export interface Config {
-        redis?: IORedis.Redis,
+        redis?: Redis.Redis,
         redisHost?: string,
         redisPort?: number,
         redisSpace?: number,
@@ -250,8 +250,8 @@ export class RedisQueueConsumer extends event.EventEmitter {
 
     private watchdogTopic: string;
     private watchdogTimeout?: number;
-    private redis: IORedis.Redis | null;
-    private watchdogRedis: IORedis.Redis;
+    private redis: Redis.Redis | null;
+    private watchdogRedis: Redis.Redis;
     private queue: string;
     private state: State = State.STOPPED;
     private idGenerator: tuid.Generator = new tuid.Generator();
@@ -404,8 +404,8 @@ export namespace RedisQueueConsumer {
         watchdogRedisHost?: string;
         watchdogRedisPort?: number;
         watchdogRedisSpace?: number;
-        redis?: IORedis.Redis;
-        watchdogRedis?: IORedis.Redis;
+        redis?: Redis.Redis;
+        watchdogRedis?: Redis.Redis;
     }
 
 

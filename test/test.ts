@@ -1,9 +1,10 @@
-/// <reference path="../typings/index.d.ts"/>
 
-import {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} from '../index';
-import * as Redis from 'ioredis';
-import * as assert from 'assert';
+import Redis = require('ioredis');
+import assert = require('assert');
 import * as tuid from 'tuid';
+import {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} from '../index';
+
+
 
 const TEST_QUEUE = 'test-queue';
 const TEST_SPONGE = 'test-sponge';
