@@ -13,7 +13,7 @@
   },
   "author": "LAN Xingcan",
   "license": "ISC",
-  "dependencies": {
+  "peerDependencies": {
     "ioredis": "^2.3.0",
     "tuid": "^0.2.6"
   },
@@ -26,6 +26,8 @@
     "node": "^4.0.0"
   },
   "devDependencies": {
+    "ioredis": "^2.3.0",
+    "tuid": "^0.2.6",
     "@types/ioredis": "0.0.20",
     "@types/mocha": "^2.2.32",
     "@types/node": "^6.0.45",
