@@ -135,7 +135,7 @@ describe('Consumer and Producer', function (this:Mocha) {
         await producer.send('test');
         await new Promise (done => setTimeout(done, 100));
         await consumer.stop();
-        assert(received == true);
+        assert(received);
 
     });
 
@@ -157,8 +157,7 @@ describe('Consumer and Producer', function (this:Mocha) {
         let watchdog = new RedisQueueWatchdog(consumerOpt);
         await watchdog.start();
         let consumer = new RedisQueueConsumer(consumerOpt);
-        consumer.once('error', (e)=> {
-        })
+        consumer.once('error', (e)=> { });
         let state = 0;
         await Promise.all([ new Promise((done)=> {consumer.start (async message => {
             switch(state) {

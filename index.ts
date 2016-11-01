@@ -29,13 +29,6 @@ enum State {
     STARTING
 }
 
-enum Result {
-    OKAY,
-    RESTART,
-    STOP
-}
-
-
 /**
  * @callback MessageHandler
  * @param message {String}
@@ -122,7 +115,7 @@ export class RedisQueueWatchdog extends event.EventEmitter {
      * @returns {Promise}
      */
     start():Promise<void> {
-        return new Promise((done, fail)=> {
+        return new Promise<void>((done, fail)=> {
             switch(this.state) {
                 case State.STOPPED:
                     this.state = State.STARTING;
@@ -298,9 +291,12 @@ export class RedisQueueConsumer extends event.EventEmitter {
 
     }
 
-    private _heartbeat(sponge) {
-        return this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge}))
-            .catch((e)=> this.emit(e))
+    private async _heartbeat(sponge) {
+        try{
+            await this.watchdogRedis.publish(this.watchdogTopic, JSON.stringify({queue: this.queue, sponge}))
+        } catch(e){
+            this.emit(e)
+        }
     }
 
     /**
@@ -310,58 +306,43 @@ export class RedisQueueConsumer extends event.EventEmitter {
     start(consumer: MessageHandler):Promise<void> {
 
         let listenTimeout = Math.ceil(this.watchdogTimeout / 1000 / 2)|| 1;
-        let procedure = (identifier)=> {
+        let procedure = async (identifier)=> {
             let sponge = `${this.queue}@${identifier}`;
-            this.state = State.STARTED;
-            this.emit('started');
-            this._heartbeat(sponge)
-                .then(()=> this.redis.brpoplpush(this.queue, sponge, listenTimeout))
-                .then((element)=> {
-                    if (element == null) {
-                        //Timeout, continue
-                        return Promise.resolve(Result.OKAY);
+            if (this.state == State.STARTING) {
+                this.state = State.STARTED;
+                this.emit('started');
+            }
+            await this._heartbeat(sponge);
+            let element = await this.redis.brpoplpush(this.queue, sponge, listenTimeout);
+            await this._heartbeat(sponge);
+            if (element != null) {
+                try {
+                    await consumer(element);
+                    try {
+                        this.redis.lrem(sponge, 1, element)
+                    } catch(e) {
+                        this.emit('error', e);
+                        this.state = State.STOPPING;
                     }
+                } catch(e) {
+                    this.emit('error', e);
+                    return procedure((await this.idGenerator.generate()).toString());
+                }
 
-                    return this._heartbeat(sponge)
-                        .then(()=> consumer(element)
-                        .then(()=>{
-                            return this.redis.lrem(sponge, 1, element)
-                                .then(()=> {
-                                    return Result.OKAY
-                                })
-                                .catch((e)=>{
-                                    this.emit('error', e);
-                                    return Result.STOP;
-                                });
-                        })
-                        .catch((e)=> {
-                            this.emit('error', e);
-                            return Result.RESTART;
-                        }));
-                })
-                .then((result)=>{
-                    if (this.state == State.STOPPING)
-                        result = Result.STOP;
-
-                    switch(result) {
-                        case Result.OKAY:
-                            return procedure(identifier);
-                        case Result.RESTART:
-                            this.idGenerator.generate().then(id=>procedure(id.toString()));
-                            return;
-                        case Result.STOP:
-                            this.state = State.STOPPED;
-                            this.emit('stopped');
-                            return;
-                    }
-                });
+            }
+            if (this.state == State.STOPPING) {
+                this.state = State.STOPPED;
+                this.emit('stopped');
+                return;
+            }
+            procedure(identifier);
         };
-        return new Promise((done, fail) => {
+        return new Promise<void>((done, fail) => {
             switch(this.state) {
                 case State.STOPPED:
                     this.state = State.STARTING;
-                    process.nextTick(() => this.idGenerator.generate().then((id)=> procedure(id.toString())));
-                //noinspection FallthroughInSwitchStatementJS
+                    process.nextTick(()=> this.idGenerator.generate().then((id)=> procedure(id.toString())));
+                // noinspection FallthroughInSwitchStatementJS
                 case State.STARTING:
                     this.once('started', done);
                     return;
@@ -377,7 +358,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
      * Stop queue consumer
      */
     stop(): Promise<void> {
-        return new Promise((done, fail) => {
+        return new Promise<void>((done, fail) => {
             switch(this.state) {
                 case State.STOPPED:
                     return done();
@@ -385,7 +366,7 @@ export class RedisQueueConsumer extends event.EventEmitter {
                     return fail(new Error('Consumer is starting up'));
                 case State.STARTED:
                     this.state = State.STOPPING;
-                //noinspection FallthroughInSwitchStatementJS
+                // noinspection FallthroughInSwitchStatementJS
                 case State.STOPPING:
                     this.once('stopped', done);
             }
