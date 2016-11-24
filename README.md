@@ -13,9 +13,9 @@ you probably have `npm@2.*` installed, then you need to run the following comman
 
 If you've setup you environment properly, run
 
-`npm install rrmq bluebird tuid`
+`npm install rrmq bluebird tuid ioredis`
 
-where `bluebird` and `tuid` are [peer dependencies] of this library
+while `bluebird`, `tuid` and `ioredis` are [peer dependencies] of this library
 
 ## Introduction
   This library implements a message queue over redis based on feature of 
@@ -31,7 +31,10 @@ where `bluebird` and `tuid` are [peer dependencies] of this library
  
     A watchdog subscribe a specified channel to watch the status of 
     consumers. If one consumer is down, the message was being processed
-    by that consumer will be recovered.
+    by that consumer will be recovered. 
+    
+    There is a separated project [rrmq-watchdog] that provides
+    a standalone daemon that you can just run it for your convenience.
     
   * Consumer
   
@@ -87,10 +90,7 @@ new RedisQueueConsumer({
 .send('hello world message');
 ```
 
-# Use with typescript
-
-The typing file of this library can is placed on `node_modules/rrmq/built/index.d.ts`. 
-
 
 [Typescript]: https://www.typescriptlang.org/
 [peer dependencies]: https://nodejs.org/uk/blog/npm/peer-dependencies
+[rrmq-watchdog]: https://www.npmjs.org/packages/rrmq-watchdog
