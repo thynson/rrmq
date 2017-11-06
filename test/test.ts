@@ -2,7 +2,7 @@
 import Redis = require('ioredis');
 import assert = require('assert');
 import * as tuid from 'tuid';
-import {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} from '../index';
+import {RedisQueueWatchdog, RedisQueueConsumer, RedisQueueProducer} from '..';
 
 
 
@@ -12,11 +12,11 @@ const TEST_TOPIC = 'test-watch-dog';
 const consumerOpt = { watchdogTopic: TEST_TOPIC, queue: TEST_QUEUE, watchdogTimeout: 1000};
 
 
-describe('RedisQueueWatchdog', function(this: Mocha) {
+describe('RedisQueueWatchdog', function(this: Mocha.ISuiteCallbackContext) {
     "use strict";
     this.slow(3000).timeout(5000);
 
-    it('should recover elements from sponge to queue', async () =>{
+    it('should recover elements from sponge to queue', async function() {
 
         let redis = new Redis();
         let timeout = false;
@@ -43,7 +43,7 @@ describe('RedisQueueWatchdog', function(this: Mocha) {
 
     });
 
-    it('should should call clearTimeout if heartbeat continues', async ()=> {
+    it('should should call clearTimeout if heartbeat continues', async function() {
 
         let redis = new Redis();
         let cancelled = false;
@@ -72,7 +72,7 @@ describe('RedisQueueWatchdog', function(this: Mocha) {
         await redis.quit();
     });
 
-    it('should start/stop normally in any state', async ()=> {
+    it('should start/stop normally in any state', async function () {
         let watchdog = new RedisQueueWatchdog(consumerOpt);
         watchdog.start();
         await watchdog.start();
@@ -85,21 +85,21 @@ describe('RedisQueueWatchdog', function(this: Mocha) {
         watchdog.stop();
     });
 });
-describe('Consumer', function(this:Mocha) {
+describe('Consumer', function(this:Mocha.ISuiteCallbackContext) {
     this.slow(3000).timeout(5000);
 
-    it('should be able to start and stop', async function(this:Mocha){
+    it('should be able to start and stop', async function(this:Mocha.ISuiteCallbackContext){
         let consumer = new RedisQueueConsumer(consumerOpt);
         await consumer.start(async() => null);
         await new Promise (done => setTimeout(done, 100));
         await consumer.stop();
     });
 
-    it('should heartbeats', async function(this:Mocha) {
-        var exception = null;
+    it('should heartbeats', async function(this:Mocha.ITestCallbackContext) {
+        let exception = null;
         let consumer = new RedisQueueConsumer(consumerOpt);
         consumer.on('error', (e)=> {console.error(e); exception = e});
-        var redis = new Redis();
+        let redis = new Redis();
         await redis.subscribe(TEST_TOPIC);
         await consumer.start(async () => undefined);
         let counter = 0;
@@ -110,7 +110,7 @@ describe('Consumer', function(this:Mocha) {
         assert(exception == null);
     });
 
-    it('should start/stop normally in any state', async function(this:Mocha) {
+    it('should start/stop normally in any state', async function(this:Mocha.ITestCallbackContext) {
         let consumer = new RedisQueueConsumer(consumerOpt);
         consumer.start(async () => undefined);
         await consumer.start(async () => undefined);
@@ -124,9 +124,9 @@ describe('Consumer', function(this:Mocha) {
     });
 });
 
-describe('Consumer and Producer', function (this:Mocha) {
+describe('Consumer and Producer', function (this:Mocha.ISuiteCallbackContext) {
     this.slow(5000).timeout(10000);
-    it('should receive message', async () =>{
+    it('should receive message', async function(){
         "use strict";
         let consumer = new RedisQueueConsumer(consumerOpt);
         let received = false;
@@ -139,7 +139,7 @@ describe('Consumer and Producer', function (this:Mocha) {
 
     });
 
-    it('should emit error event when handler throw exception', async ()=> {
+    it('should emit error event when handler throw exception', async function() {
         let consumer = new RedisQueueConsumer(consumerOpt);
         let exception = null;
         consumer.on('error', (e)=>{
@@ -153,7 +153,7 @@ describe('Consumer and Producer', function (this:Mocha) {
         assert(exception != null);
     });
 
-    it('should continue receive message after error occurred', async ()=> {
+    it('should continue receive message after error occurred', async function() {
         let watchdog = new RedisQueueWatchdog(consumerOpt);
         await watchdog.start();
         let consumer = new RedisQueueConsumer(consumerOpt);
@@ -184,7 +184,7 @@ describe('Consumer and Producer', function (this:Mocha) {
         await watchdog.stop();
     });
 
-    it('should not receive message exactly as passed', async ()=> {
+    it('should not receive message exactly as passed', async function() {
         "use strict";
         let values = [];
         for (let i = 0; i < 100; i++) values.push(i);

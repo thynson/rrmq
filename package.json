@@ -1,12 +1,12 @@
 {
   "name": "rrmq",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Redis Reliable Message Queue",
   "main": "built/index.js",
   "typings": "built/index.d.ts",
   "scripts": {
     "prepublish": "tsc",
-    "test": "mocha --compilers ts:ts-node/register test/test.ts",
+    "test": "cd test && mocha -r ts-node/register ./test.ts",
     "test:coverage": "nyc -e .ts -i ts-node/register mocha test/test.ts",
     "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "jsdoc": "./node_modules/.bin/jsdoc index.js -d ./docs"
@@ -14,8 +14,9 @@
   "author": "LAN Xingcan",
   "license": "ISC",
   "peerDependencies": {
-    "ioredis": "^2.3.0",
-    "tuid": "^0.4.1"
+    "ioredis": "^3.2.0",
+    "tuid": "^0.4.1",
+    "tslib": "^1.8.0"
   },
   "keywords": [
     "Redis",
@@ -27,17 +28,18 @@
     "npm": "^3.0.0"
   },
   "devDependencies": {
-    "@types/ioredis": "0.0.20",
-    "@types/mocha": "^2.2.32",
-    "@types/node": "^6.0.45",
     "@types/bluebird": "^3.0.35",
+    "@types/ioredis": "0.0.20",
+    "@types/mocha": "^2.2.44",
+    "@types/node": "^8.0.0",
     "bluebird": "^3.4.6",
     "coveralls": "^2.11.11",
-    "ioredis": "^2.3.0",
-    "mocha": "^2.5.3",
+    "ioredis": "^3.2.0",
+    "mocha": "^4.0.0",
     "nyc": "^8.1.0",
-    "ts-node": "^1.2.2",
+    "ts-node": "^3.3.0",
+    "tslib": "^1.8.0",
     "tuid": "^0.4.1",
-    "typescript": "^2.1.0-dev.20161031"
+    "typescript": "^2.5"
   }
 }

@@ -3,11 +3,13 @@
     "module": "commonjs",
     "target": "es5",
     "lib": ["es2015.core", "es5", "es2015.promise"],
-    "types": ["node"],
+    "types": ["mocha"],
+    "importHelpers": true,
     "noEmitHelpers": true,
-    "outDir": "built",
-    "sourceMap": true,
-    "declaration": true
+    "noEmit": true,
+    "moduleResolution": "node"
   },
-  "include": ["./src/*.ts"]
+  "include": [
+    "*.ts"
+  ]
 }
